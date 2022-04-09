@@ -1,4 +1,4 @@
-import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
@@ -13,12 +13,16 @@ function App() {
   const [password, setPassword] = useState("");
   const [validated, setValidated] = useState(false);
   const [error, setError] = useState("");
+  const [registered, setRegistered] = useState(false);
 
   const handleEmailBlur = (e) => {
     setEmail(e.target.value);
   };
   const handlePasswordBlur = (e) => {
     setPassword(e.target.value);
+  };
+  const handleRegistered = (e) => {
+    setRegistered(e.target.checked);
   };
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -27,21 +31,36 @@ function App() {
       e.stopPropagation();
       return;
     }
-    if(!/(?=.*[A-Z])/.test(password)){
+    if (!/(?=.*[A-Z])/.test(password)) {
       setError("Password must contain at least one uppercase letter");
       return;
     }
     setValidated(true);
     setError("");
 
-    createUserWithEmailAndPassword(auth, email, password)
-      .then((result) => {
+    if (registered) {
+      signInWithEmailAndPassword(auth, email, password)
+      .then(result =>{
         const user = result.user;
         console.log(user);
       })
+      .catch(error => {
+        setError(error.message);
+      });
+    }
+    else{
+      createUserWithEmailAndPassword(auth, email, password)
+      .then((result) => {
+        const user = result.user;
+        console.log(user);
+        setEmail("");
+        setPassword("");
+      })
       .catch((error) => {
         console.log(error);
+        setError(error.message);
       });
+    }
     e.preventDefault();
     console.log("submit", email, password);
   };
@@ -49,7 +68,9 @@ function App() {
   return (
     <div>
       <div className="submit w-50 mx-auto mt-5">
-        <h2 className="text-primary header">Please Register</h2>
+        <h2 className="text-primary header">
+          Please {registered ? "Log In" : 'Register'}!!!
+        </h2>
         <Form noValidate validated={validated} onSubmit={handleSubmit}>
           <Form.Group className="mb-3" controlId="formBasicEmail">
             <Form.Label>Email address</Form.Label>
@@ -80,11 +101,15 @@ function App() {
             </Form.Control.Feedback>
           </Form.Group>
           <Form.Group className="mb-3" controlId="formBasicCheckbox">
-            <Form.Check type="checkbox" label="Remember Me" />
+            <Form.Check
+              onChange={handleRegistered}
+              type="checkbox"
+              label="Already Registered?"
+            />
           </Form.Group>
           <p className="text-danger">{error}</p>
           <Button variant="primary" type="submit">
-            Submit
+            {registered ? 'Log In' : 'Register'}
           </Button>
         </Form>
       </div>
