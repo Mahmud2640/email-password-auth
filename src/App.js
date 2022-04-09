@@ -1,115 +1,123 @@
-import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import "bootstrap/dist/css/bootstrap.min.css";
-import Form from "react-bootstrap/Form";
-import Button from "react-bootstrap/Button";
-import "./App.css";
+import { createUserWithEmailAndPassword, getAuth, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword } from "firebase/auth";
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './App.css';
 import app from "./firebase.init";
+import Form from 'react-bootstrap/Form';
+import Button from 'react-bootstrap/Button';
 import { useState } from "react";
 
-const auth = getAuth(app);
+const auth = getAuth(app)
 
 function App() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [validated, setValidated] = useState(false);
-  const [error, setError] = useState("");
   const [registered, setRegistered] = useState(false);
+  const [error, setError] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  const handleEmailBlur = (e) => {
-    setEmail(e.target.value);
-  };
-  const handlePasswordBlur = (e) => {
-    setPassword(e.target.value);
-  };
-  const handleRegistered = (e) => {
-    setRegistered(e.target.checked);
-  };
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const form = e.currentTarget;
+  const handleEmailBlur = event => {
+    setEmail(event.target.value);
+  }
+
+  const handlePasswordBlur = event => {
+    setPassword(event.target.value);
+  }
+
+  const handleRegisteredChange = event =>{
+    setRegistered(event.target.checked)
+  }
+
+  const handleFormSubmit = event => {
+    event.preventDefault();
+    const form = event.currentTarget;
     if (form.checkValidity() === false) {
-      e.stopPropagation();
+      event.stopPropagation();
       return;
     }
-    if (!/(?=.*[A-Z])/.test(password)) {
-      setError("Password must contain at least one uppercase letter");
+
+    if (!/(?=.*?[#?!@$%^&*-])/.test(password)) {
+      setError('Password Should contain at least one special character');
       return;
     }
     setValidated(true);
-    setError("");
+    setError('');
 
-    if (registered) {
+    if(registered) {
+      console.log(email, password);
       signInWithEmailAndPassword(auth, email, password)
       .then(result =>{
         const user = result.user;
         console.log(user);
       })
-      .catch(error => {
+      .catch(error =>{
+        console.error(error);
         setError(error.message);
-      });
+      })
     }
     else{
       createUserWithEmailAndPassword(auth, email, password)
-      .then((result) => {
+      .then(result => {
         const user = result.user;
         console.log(user);
-        setEmail("");
-        setPassword("");
+        setEmail('');
+        setPassword('');
+        verifyEmail();
       })
-      .catch((error) => {
-        console.log(error);
+      .catch(error => {
+        console.error(error);
         setError(error.message);
-      });
+      })
     }
-    e.preventDefault();
-    console.log("submit", email, password);
-  };
+
+    
+    event.preventDefault();
+  }
+
+  const handlePasswordReset = () =>{
+    sendPasswordResetEmail(auth, email)
+    .then(() =>{
+      console.log('email sent')
+    })
+  }
+
+  const verifyEmail = () =>{
+    sendEmailVerification(auth.currentUser)
+    .then(() =>{
+      console.log('Email Verification Sent');
+    })
+  }
 
   return (
     <div>
-      <div className="submit w-50 mx-auto mt-5">
-        <h2 className="text-primary header">
-          Please {registered ? "Log In" : 'Register'}!!!
-        </h2>
-        <Form noValidate validated={validated} onSubmit={handleSubmit}>
+      <div className="registration w-50 mx-auto mt-5">
+        <h2 className="text-primary">Please { registered ? 'Login': 'Register'}!!</h2>
+        <Form noValidate validated={validated} onSubmit={handleFormSubmit}>
           <Form.Group className="mb-3" controlId="formBasicEmail">
             <Form.Label>Email address</Form.Label>
-            <Form.Control
-              onBlur={handleEmailBlur}
-              type="email"
-              placeholder="Enter email"
-              required
-            />
+            <Form.Control onBlur={handleEmailBlur} type="email" placeholder="Enter email" required />
             <Form.Text className="text-muted">
               We'll never share your email with anyone else.
             </Form.Text>
             <Form.Control.Feedback type="invalid">
-              Please provide a valid Email.
+              Please provide a valid email.
             </Form.Control.Feedback>
           </Form.Group>
 
           <Form.Group className="mb-3" controlId="formBasicPassword">
             <Form.Label>Password</Form.Label>
-            <Form.Control
-              onBlur={handlePasswordBlur}
-              type="password"
-              placeholder="Password"
-              required
-            />
+            <Form.Control onBlur={handlePasswordBlur} type="password" placeholder="Password" required />
             <Form.Control.Feedback type="invalid">
-              Please provide a valid Password.
+              Please provide a valid password.
             </Form.Control.Feedback>
           </Form.Group>
           <Form.Group className="mb-3" controlId="formBasicCheckbox">
-            <Form.Check
-              onChange={handleRegistered}
-              type="checkbox"
-              label="Already Registered?"
-            />
+            <Form.Check onChange={handleRegisteredChange} type="checkbox" label="Already Registered?" />
           </Form.Group>
           <p className="text-danger">{error}</p>
+          <Button onClick={handlePasswordReset} variant="link">Forget Password?</Button>
+          <br />
           <Button variant="primary" type="submit">
-            {registered ? 'Log In' : 'Register'}
+            {registered ? 'Login':  'Register'}
           </Button>
         </Form>
       </div>
